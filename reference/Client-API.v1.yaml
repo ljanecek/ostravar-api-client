@@ -5,8 +5,12 @@ info:
   description: ''
 servers:
   - url: 'https://api.ostravar.cz/api'
+  - description: ''
+    url: 'https://api-ostravar.brainz.cz/api'
+  - url: 'http://localhost/api'
+    description: ''
 paths:
-  /auth/login:
+  /login:
     post:
       summary: ''
       operationId: post-login
@@ -25,8 +29,6 @@ paths:
                         type: string
                       refreshToken:
                         type: string
-                      userId:
-                        type: number
       requestBody:
         content:
           application/json:
@@ -37,23 +39,81 @@ paths:
                   type: string
                 password:
                   type: string
+      description: 'Přihlášení uživatele pomocí emailu a hesla, response metody je objekt s JWT tokeny.'
     parameters: []
-  /auth/logout:
+  /logout:
     post:
       summary: ''
       operationId: post-api-auth-logout
       responses:
         '200':
           description: OK
+      parameters:
+        - schema:
+            type: string
+          in: header
+          name: '<token>'
+      description: 'Odhlášení, pouze zneplatní JWT token daného uživatele, na frontendu dojde k odhlášení.'
     parameters: []
-  /auth/user:
+  /user:
     get:
-      summary: Your GET endpoint
+      summary: Get user data
       tags: []
-      responses: {}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  zipCode:
+                    type: string
+                  phoneNumber:
+                    type: string
+                  email:
+                    type: string
+                  lastName:
+                    type: string
+                  firstName:
+                    type: string
+                  userId:
+                    type: number
+                  city:
+                    type: string
+                  street:
+                    type: string
+                  freeVotes:
+                    type: number
+                  votes:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        projectId:
+                          type: number
+                        count:
+                          type: number
+                  prizeDraw:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        type:
+                          type: string
+                        round:
+                          type: string
+                        prizeId:
+                          type: number
       operationId: get-api-auth-user
+      parameters:
+        - schema:
+            type: string
+          in: header
+          name: '<token>'
+      description: 'Zabezpečená metoda na základě platného JWT tokenu, která vrátí užvatelská data.'
     parameters: []
-  /auth/refresh:
+  /refresh:
     post:
       summary: ''
       operationId: post-api-auth-refresh
@@ -72,6 +132,253 @@ paths:
                         type: string
                       refreshToken:
                         type: string
+      parameters:
+        - schema:
+            type: string
+          in: header
+          name: '<token>'
+      description: 'Metoda pro refreshování tokenu, frontend automaticky, pokud dojde k nějákému requestu před ukončením platnosti tokenu, požádá o jeho obnovení'
     parameters: []
+  /registration:
+    post:
+      summary: ''
+      operationId: post-auth-registration
+      responses:
+        '200':
+          description: OK
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                firstName:
+                  type: string
+                lastName:
+                  type: string
+                email:
+                  type: string
+                password:
+                  type: string
+                passwordConfirmation:
+                  type: string
+                phoneNumber:
+                  type: string
+                zipCode:
+                  type: string
+                agreements:
+                  type: object
+                  properties:
+                    commercial:
+                      type: boolean
+      description: 'Registrace uživatele, dojde k zavolání patřičné metody od ATS, případně uložení do vlastní databáze, asi jenom základní identifikátory. Tato metoda není zabezpečené pomocí JWT. ATS odešle email s odkazem a HASHem který bude směřovat frontend, který zavolá metodu pro potvrzení registrace na našem backendu.'
+    parameters: []
+  /code-verification:
+    post:
+      summary: ''
+      operationId: post-code-verification
+      responses:
+        '200':
+          description: OK
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+            examples:
+              Example:
+                value:
+                  code: 87qew4b7
+        description: ''
+      parameters:
+        - schema:
+            type: string
+          in: header
+          name: '<token>'
+      description: 'Metoda pro nahrání kodu, ověření uživatele na základě decryptování JWT tokenu a následné odeslání na patřičnou API metodu ATS. Tato metoda je zabezpečená pomocí platného JWT.'
+  /reset-password:
+    post:
+      summary: ''
+      operationId: post-reset-password
+      responses:
+        '200':
+          description: OK
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+        description: ''
+      description: 'Požadavek na změnu hesla. Poté dojde k zavolání patřičné metody od ATS. ATS odešle emails s odkazem a HASHem na naší URL. Tato metoda je veřejná, není zabezpečená JWT tokenem.'
+  /registration-confirmation:
+    post:
+      summary: ''
+      operationId: post-registration-confirmation
+      responses:
+        '200':
+          description: OK
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                hash:
+                  type: string
+      description: 'Metoda pro potvrzení registrace která obsahuje HASH, zavolá patřičnou metodu ATS, které ověří platnost HASHe. '
+  /receipt-upload:
+    put:
+      summary: ''
+      operationId: put-receipt-upload
+      responses:
+        '200':
+          description: OK
+      parameters:
+        - schema:
+            type: string
+          in: header
+          name: '<token>'
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: string
+            examples: {}
+        description: ''
+      description: Metoda pro nahrávání účtenek. Je zabezpečená pomocí platného JWT tokenu. Měla by uložit na server originál a zmenšeninu účtenky a do databáze patřičné data získané na základě Google Vision API.
+  /update-password:
+    post:
+      summary: ''
+      operationId: post-update-password
+      responses:
+        '200':
+          description: OK
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                newPassword:
+                  type: string
+                hash:
+                  type: string
+        description: ''
+      description: 'Nezabezpečená metoda, která se zavolá s frontendu potom co uživatel klikne na odkaz v emailu který obsahuje HASH. Zavolá patřičnou metodu od ATS, která změní heslo. Po úspěšné response uživatel uvidí hlášku o potvrzení změně hesla a výzvu k přihlášení. '
+  /user-update:
+    post:
+      summary: ''
+      operationId: post-user-update
+      responses:
+        '200':
+          description: OK
+      parameters:
+        - schema:
+            type: string
+          in: header
+          name: '<token>'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                firstName:
+                  type: string
+                lastName:
+                  type: string
+                password:
+                  type: string
+                phoneNumber:
+                  type: string
+                zipCode:
+                  type: string
+                city:
+                  type: string
+                street:
+                  type: string
+        description: ''
+      description: 'Zabezpečená metoda pomocí platného JWT tokenu, pro aktualizaci uživatelovo dat. Zavolá patřičnou metodu u ATS.'
+  /user-vote:
+    post:
+      summary: ''
+      operationId: post-user-vote
+      responses:
+        '200':
+          description: OK
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                projectId:
+                  type: number
+      parameters:
+        - schema:
+            type: string
+          in: header
+          name: '<token>'
+      description: 'Zabetpečená metoda pomocí JWT tokenu, která zavolá patřičnou metodu u ATS, které ověří zda má uživatel právo hlasovat (dostatečný počet volných hlasů). bude potřeba přičíst hlas k projektu v lokální databázi.'
+  /user-delete:
+    delete:
+      summary: ''
+      operationId: delete-user-delete
+      responses:
+        '200':
+          description: OK
+      parameters:
+        - schema:
+            type: string
+          in: header
+          name: '<token>'
+      description: 'Zabezpečená metoda JWT tokene, která odstraní uživatele. Zavolá patřičnou metodu u ATS. Případně dojde k označená uživatele, jako smazaného, v lokální databázi. Datově bude muset být zachován, protože na něj mohou být v lokální databázi vazby, viz. zadání a výpis účtenek.'
+  /projects:
+    get:
+      summary: Your GET endpoint
+      tags: []
+      responses: {}
+      operationId: get-projects
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: object
+                properties:
+                  title:
+                    type: string
+                  cover:
+                    type: string
+                  description:
+                    type: string
+                  totalVotes:
+                    type: string
+                  createdAt:
+                    type: string
+                  video:
+                    type: string
+                  content:
+                    type: string
+                  gallery:
+                    type: array
+                    items:
+                      type: string
+                  id:
+                    type: integer
+      description: 'Metoda která vrátí výpis všech projektů z databáze a jejich data, celkový počet hlasů by měl bát INT v databázi, který se aktualizuje na základě hlasu uživatele schválenho patřičnou metodou od ATS. Tato metoda není zabezpečená pomocí JWT protože projekty jsou veřejně dostupné.'
 components:
   schemas: {}
+  securitySchemes:
+    'Authorization:':
+      type: http
+      scheme: bearer
