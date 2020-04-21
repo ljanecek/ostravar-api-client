@@ -85,15 +85,6 @@ paths:
                     type: string
                   freeVotes:
                     type: number
-                  votes:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        projectId:
-                          type: number
-                        count:
-                          type: number
                   prizeDraw:
                     type: array
                     items:
@@ -347,6 +338,13 @@ paths:
       tags: []
       responses: {}
       operationId: get-projects
+      parameters:
+        - schema:
+            type: string
+          in: header
+          name: '<token>'
+      security:
+        - 'Authorization:': []
       requestBody:
         content:
           application/json:
@@ -355,27 +353,20 @@ paths:
               items:
                 type: object
                 properties:
+                  projectID:
+                    type: string
                   title:
                     type: string
-                  cover:
+                  image:
                     type: string
                   description:
-                    type: string
-                  totalVotes:
-                    type: string
-                  createdAt:
-                    type: string
-                  video:
-                    type: string
-                  content:
                     type: string
                   gallery:
                     type: array
                     items:
                       type: string
-                  id:
-                    type: integer
-      description: 'Metoda která vrátí výpis všech projektů z databáze a jejich data, celkový počet hlasů by měl bát INT v databázi, který se aktualizuje na základě hlasu uživatele schválenho patřičnou metodou od ATS. Tato metoda není zabezpečená pomocí JWT protože projekty jsou veřejně dostupné.'
+                  votes:
+                    type: number
 components:
   schemas: {}
   securitySchemes:
